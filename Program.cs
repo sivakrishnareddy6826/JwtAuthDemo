@@ -1,15 +1,35 @@
+using JwtAuthDemo;
+using JwtAuthDemo.Repository;
+using JwtAuthDemo.Repository.Interfaces;
+using JwtAuthDemo.Services;
+using JwtAuthDemo.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+var key = "your-secret-key-should-be-longer";
+var issuer = "your-issuer";
+var audience = "your-audience";
 
+// Configure MySQL Database Connection  
+builder.Services.AddDbContext<DataContext>(options =>
+    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        new MySqlServerVersion(new Version(8, 0, 31))));
+
+
+builder.Services.AddSingleton(new JwtTokenService(key, issuer, audience));
 // Add services to the container.
+builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+builder.Services.AddScoped<IDepartmentService,  DepartmentService>();
 builder.Services.AddControllers();
 
-// Configure JWT Authentication
-var key = "your-secret-key-should-be-longer"; // Store securely in appsettings.json
+// Configure JWT Authentication 
+//var key = "your-secret-key-should-be-longer"; // Store securely in appsettings.json
 var keyBytes = Encoding.UTF8.GetBytes(key);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

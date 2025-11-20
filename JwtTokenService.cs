@@ -18,7 +18,7 @@ namespace JwtAuthDemo
             _audience = audience;
         }
 
-        public string GenerateToken(string username, string role)
+        public string   GenerateToken(string username, string role)
         {
             var claims = new[]
             {

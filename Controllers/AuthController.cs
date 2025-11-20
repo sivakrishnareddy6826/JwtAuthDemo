@@ -1,5 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using JwtAuthDemo.Dtos;
+using JwtAuthDemo.Dtos.Tables;
+using JwtAuthDemo.Repository;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace JwtAuthDemo.Controllers
 {
@@ -7,27 +12,65 @@ namespace JwtAuthDemo.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
+        private readonly DataContext _context;
         private readonly JwtTokenService _jwtTokenService;
-
-        public AuthController()
+        public AuthController(DataContext context, JwtTokenService jwtService)
         {
-            var key = "your-secret-key-should-be-longer"; // Store securely
-            var issuer = "your-issuer";
-            var audience = "your-audience";
-
-            _jwtTokenService = new JwtTokenService(key, issuer, audience);
+            _context = context;
+            _jwtTokenService = jwtService;
         }
 
-        [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
+        [HttpPost("admin/login")]
+        public async Task<IActionResult> AdminLogin([FromBody] LoginRequest request)
         {
-            if (request.Username == "admin" && request.Password == "password") // Replace with real authentication
-            {
-                var token = _jwtTokenService.GenerateToken(request.Username, "Admin");
-                return Ok(new { token });
-            }
+            var admin = await _context.AdminAccounts.FirstOrDefaultAsync(a => a.Username == request.Email);
+            if (admin == null || !BCrypt.Net.BCrypt.Verify(request.Password, admin.PasswordHash))
+                return Unauthorized("Invalid admin credentials.");
 
-            return Unauthorized("Invalid username or password");
+            var token = _jwtTokenService.GenerateToken(admin.Username, admin.Role);
+            return Ok(new { token, role = admin.Role });
+        }
+
+        [HttpPost("employee/signup")]
+        public async Task<IActionResult> EmployeeSignup([FromBody] SignupRequest request)
+        {
+            var employee = await _context.Employees.FirstOrDefaultAsync(e => e.Email == request.Email);
+            if (employee == null)
+                return BadRequest("Employee email not found. Please contact Admin.");
+            var role = await _context.Roles.FindAsync(employee.RoleId);
+            if (role == null)
+                return BadRequest("Employee email found but no role assigned. Please contact Admin.");
+            if (await _context.EmployeeAccounts.AnyAsync(a => a.Email == request.Email))
+                return BadRequest("Account already exists.");
+
+            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            var account = new EmployeeAccount
+            {
+                Email = request.Email,
+                PasswordHash = hashedPassword,
+                Role = role.Name,
+                EmployeeId = employee.Id,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _context.EmployeeAccounts.Add(account);
+            await _context.SaveChangesAsync();
+
+            return Ok("Signup successful. You can now login.");
+        }
+
+        [HttpPost("employee/login")]
+        public async Task<IActionResult> EmployeeLogin([FromBody] LoginRequest request)
+        {
+            var account = await _context.EmployeeAccounts
+                .Include(e => e.Employee)
+                .FirstOrDefaultAsync(a => a.Email == request.Email);
+
+            if (account == null || !BCrypt.Net.BCrypt.Verify(request.Password, account.PasswordHash))
+                return Unauthorized("Invalid email or password.");
+
+            var token = _jwtTokenService.GenerateToken(account.Email, account.Role);
+            return Ok(new { token, role = account.Role });
         }
     }
 }
