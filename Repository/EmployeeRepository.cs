@@ -15,12 +15,62 @@ namespace JwtAuthDemo.Repository
 
         public async Task<IEnumerable<EmployeeDto>> GetAllEmployees()
         {
-            return await _context.Employees.ToListAsync();
-        }
+            return await _context.Employees
+                .Include(e => e.Department)
+                .Include(e => e.Role)
+                .Select(e => new EmployeeDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Email = e.Email,
+                    Salary = e.Salary,
+                    DepartmentId = e.DepartmentId,
+                    RoleId = e.RoleId,
+                    Position = e.Position,
 
-        public async Task<EmployeeDto> GetEmployeeById(int id)
+                    // Navigation properties
+                    Department = new Department
+                    {
+                        Id = e.Department.Id,
+                        Name = e.Department.Name
+                    },
+                    Role = new Role
+                    {
+                        Id = e.Role.Id,
+                        Name = e.Role.Name
+                    }
+                })
+                .ToListAsync();
+        }
+         
+        public async Task<EmployeeDto?> GetEmployeeById(int id)
         {
-            return await _context.Employees.FindAsync(id);
+            return await _context.Employees
+                .Include(e => e.Department)
+                .Include(e => e.Role)
+                .Where(e => e.Id == id)
+                .Select(e => new EmployeeDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Email = e.Email,
+                    Salary = e.Salary,
+                    DepartmentId = e.DepartmentId,
+                    RoleId = e.RoleId,
+                    Position = e.Position,
+
+                    // Navigation properties
+                    Department = new Department
+                    {
+                        Id = e.Department.Id,
+                        Name = e.Department.Name
+                    },
+                    Role = new Role
+                    {
+                        Id = e.Role.Id,
+                        Name = e.Role.Name
+                    }
+                }).FirstOrDefaultAsync();
         }
 
         public async Task<EmployeeDto> AddEmployee(EmployeeDto employee)
@@ -37,7 +87,6 @@ namespace JwtAuthDemo.Repository
 
         public async Task<EmployeeDto> UpdateEmployee(EmployeeDto employee)
         {
-            _context.Entry(employee).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return employee;
         }

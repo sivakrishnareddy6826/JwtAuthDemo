@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace JwtAuthDemo.Controllers
 {
-    [Route("api/employee")]
+    [Route("api/employees")]
     [ApiController]
     public class EmployeeController : ControllerBase
     {
@@ -37,9 +37,9 @@ namespace JwtAuthDemo.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateEmployee(int id, EmployeeDto employee)
+        public async Task<IActionResult> UpdateEmployee(int id, EmployeeRequestDto employee)
         {
-            if (id != employee.Id) return BadRequest();
+            if (id < 0) return BadRequest();
             return Ok(await _employeeService.UpdateEmployeeAsync(id, employee));
         }
 

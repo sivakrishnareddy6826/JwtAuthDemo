@@ -13,7 +13,16 @@ var builder = WebApplication.CreateBuilder(args);
 var key = "your-secret-key-should-be-longer";
 var issuer = "your-issuer";
 var audience = "your-audience";
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularApp",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
 // Configure MySQL Database Connection  
 builder.Services.AddDbContext<DataContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -92,6 +101,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowAngularApp");
 
 app.UseAuthentication(); // Enable Authentication
 app.UseAuthorization();  // Enable Authorization

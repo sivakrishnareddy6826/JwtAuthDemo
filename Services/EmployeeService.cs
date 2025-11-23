@@ -47,22 +47,25 @@ namespace JwtAuthDemo.Services
             return await _employeeRepository.AddEmployee(employeeDto);
         }
 
-        public async Task<EmployeeDto> UpdateEmployeeAsync(int id, EmployeeDto employee)
+        public async Task<EmployeeDto> UpdateEmployeeAsync(int id, EmployeeRequestDto employee)
         {
-            if (id != employee.Id)
-                throw new ArgumentException("Mismatched employee id");
-
             var existing = await _employeeRepository.GetEmployeeById(id);
             if (existing == null)
                 throw new KeyNotFoundException("Employee not found");
 
-            //Example business logic: preserve created date, etc.
-            employee.CreatedDate = existing.CreatedDate;
-            employee.ModifiedDate = employee.ModifiedDate ?? DateTime.Now;
-            employee.ModifiedBy = employee.ModifiedBy ?? "SYSTEM";
+            existing.Name = employee.Name;
+            existing.Email = employee.Email;
+            existing.Position = employee.Position;
+            existing.DepartmentId = employee.DepartmentId;
+            existing.RoleId = employee.RoleId;
+            existing.Salary = employee.Salary;
 
-            return await _employeeRepository.UpdateEmployee(employee);
+            existing.ModifiedDate = DateTime.Now;
+            existing.ModifiedBy = "SYSTEM";
+
+            return await _employeeRepository.UpdateEmployee(existing);
         }
+
 
         public async Task<bool> DeleteEmployeeAsync(int id)
         {

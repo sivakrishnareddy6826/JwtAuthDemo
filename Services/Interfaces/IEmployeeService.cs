@@ -8,7 +8,7 @@ namespace JwtAuthDemo.Services.Interfaces
         Task<IEnumerable<EmployeeDto>> GetAllEmployeesAsync();
         Task<EmployeeDto?> GetEmployeeByIdAsync(int id);
         Task<EmployeeDto> AddEmployeeAsync(EmployeeRequestDto employee);
-        Task<EmployeeDto> UpdateEmployeeAsync(int id, EmployeeDto employee);
+        Task<EmployeeDto> UpdateEmployeeAsync(int id, EmployeeRequestDto employee);
         Task<bool> DeleteEmployeeAsync(int id);
     }
 }
