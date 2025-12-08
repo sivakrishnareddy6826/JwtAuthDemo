@@ -1,10 +1,11 @@
 ﻿using JwtAuthDemo.Dtos;
-using JwtAuthDemo.Dtos.Tables;
 using JwtAuthDemo.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JwtAuthDemo.Controllers
 {
+    [Authorize(Roles = "User,Admin")]
     [Route("api/employees")]
     [ApiController]
     public class EmployeeController : ControllerBase

@@ -20,16 +20,16 @@ namespace JwtAuthDemo.Controllers
             _jwtTokenService = jwtService;
         }
 
-        [HttpPost("admin/login")]
-        public async Task<IActionResult> AdminLogin([FromBody] LoginRequest request)
-        {
-            var admin = await _context.AdminAccounts.FirstOrDefaultAsync(a => a.Username == request.Email);
-            if (admin == null || !BCrypt.Net.BCrypt.Verify(request.Password, admin.PasswordHash))
-                return Unauthorized("Invalid admin credentials.");
+        //[HttpPost("admin/login")]
+        //public async Task<IActionResult> AdminLogin([FromBody] LoginRequest request)
+        //{
+        //    var admin = await _context.AdminAccounts.FirstOrDefaultAsync(a => a.Username == request.Email);
+        //    if (admin == null || !BCrypt.Net.BCrypt.Verify(request.Password, admin.PasswordHash))
+        //        return Unauthorized("Invalid admin credentials.");
 
-            var token = _jwtTokenService.GenerateToken(admin.Username, admin.Role);
-            return Ok(new { token, role = admin.Role });
-        }
+        //    var token = _jwtTokenService.GenerateToken(admin.Username, admin.Role);
+        //    return Ok(new { token, role = admin.Role });
+        //}
 
         [HttpPost("employee/signup")]
         public async Task<IActionResult> EmployeeSignup([FromBody] SignupRequest request)

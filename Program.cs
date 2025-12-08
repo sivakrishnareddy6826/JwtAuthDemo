@@ -1,4 +1,4 @@
-using JwtAuthDemo;
+﻿using JwtAuthDemo;
 using JwtAuthDemo.Repository;
 using JwtAuthDemo.Repository.Interfaces;
 using JwtAuthDemo.Services;
@@ -10,37 +10,44 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-var key = "your-secret-key-should-be-longer";
-var issuer = "your-issuer";
-var audience = "your-audience";
+
+// 1️. Load JWT settings FIRST (do NOT reorder)
+var key = builder.Configuration["Jwt:Key"];
+var issuer = builder.Configuration["Jwt:Issuer"];
+var audience = builder.Configuration["Jwt:Audience"];
+var keyBytes = Encoding.UTF8.GetBytes(key);
+
+// 2️. Register JwtTokenService AFTER loading key
+builder.Services.AddSingleton(new JwtTokenService(key, issuer, audience));
+
+// 3️. CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp",
         policy =>
         {
             policy.WithOrigins("http://localhost:4200")
-            .AllowAnyHeader()
+                  .AllowAnyHeader()
                   .AllowAnyMethod();
         });
 });
-// Configure MySQL Database Connection  
+
+// 4️. Database
 builder.Services.AddDbContext<DataContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
-        new MySqlServerVersion(new Version(8, 0, 31))));
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        new MySqlServerVersion(new Version(8, 0, 31))
+    ));
 
-
-builder.Services.AddSingleton(new JwtTokenService(key, issuer, audience));
-// Add services to the container.
+// 5️. Repositories & Services
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
-builder.Services.AddScoped<IDepartmentService,  DepartmentService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+
 builder.Services.AddControllers();
 
-// Configure JWT Authentication 
-//var key = "your-secret-key-should-be-longer"; // Store securely in appsettings.json
-var keyBytes = Encoding.UTF8.GetBytes(key);
-
+// 6️. Configure JWT Authentication (using SAME key)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -50,21 +57,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = "your-issuer",
-            ValidAudience = "your-audience",
+
+            ValidIssuer = issuer,
+            ValidAudience = audience,
             IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
         };
     });
 
 builder.Services.AddAuthorization();
 
-// Add Swagger with JWT Support
+// 7️. Swagger with JWT support
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "JWT Auth API", Version = "v1" });
 
-    // Add JWT Authentication in Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -72,7 +79,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Enter 'Bearer' [space] and then your valid token. Example: `Bearer your-token-here`"
+        Description = "Enter 'Bearer' + space + your token"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -93,7 +100,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// 8️. Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -101,10 +108,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseCors("AllowAngularApp");
 
-app.UseAuthentication(); // Enable Authentication
-app.UseAuthorization();  // Enable Authorization
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

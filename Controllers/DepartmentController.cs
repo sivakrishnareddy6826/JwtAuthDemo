@@ -1,10 +1,11 @@
 ﻿using JwtAuthDemo.Dtos.Tables;
 using JwtAuthDemo.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JwtAuthDemo.Controllers
 {
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     [Route("api/admin/department")]
     [ApiController]
     public class DepartmentController : ControllerBase
